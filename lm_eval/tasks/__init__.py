@@ -30,6 +30,7 @@ from . import pubmedqa
 from . import sciq
 from . import qasper
 from . import qa4mre
+from . import quality
 from . import translation
 from . import headqa
 from . import mathqa
@@ -122,9 +123,15 @@ TASK_REGISTRY = {
     "pubmedqa": pubmedqa.Pubmed_QA,
     "sciq": sciq.SciQ,
     "qasper": qasper.QASPER,
+    "qasper_article": qasper.QASPERArticle,
+    "qasper_article_pruned_4k": qasper.QASPERArticlePruned4K,
+    "qasper_article_pruned_8k": qasper.QASPERArticlePruned8K,
     "qa4mre_2011": qa4mre.QA4MRE_2011,
     "qa4mre_2012": qa4mre.QA4MRE_2012,
     "qa4mre_2013": qa4mre.QA4MRE_2013,
+    "quality": quality.QuALITY,
+    "quality_pruned_4k": quality.QuALITYPruned4K,
+    "quality_pruned_8k": quality.QuALITYPruned8K,
     "triviaqa": triviaqa.TriviaQA,
     "arc_easy": arc.ARCEasy,
     "arc_challenge": arc.ARCChallenge,

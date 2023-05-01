@@ -100,11 +100,22 @@ def token_f1_score(prediction, ground_truth):
     f1 = (2 * precision * recall) / (precision + recall)
     return f1
 
+def get_article(full_text):
+    paragraphs = []
+    for section_name, section_paragraphs in zip(full_text["section_name"], full_text["paragraphs"]):
+        if section_name is not None:
+            paragraphs.append(section_name)
+        for paragraph in section_paragraphs:
+            paragraph_text = paragraph.replace("\n", " ").strip()
+            if paragraph_text:
+                paragraphs.append(paragraph_text)
+    return "  ".join(paragraphs)
 
 class QASPER(Task):
     VERSION = 0
     DATASET_PATH = "qasper"
     DATASET_NAME = None
+    ABSTRACT = True
 
     def has_training_docs(self):
         return True
@@ -117,16 +128,13 @@ class QASPER(Task):
 
     def doc_to_text(self, doc):
         return (
-            "TITLE: "
-            + doc["title"]
-            + "\n"
-            + "ABSTRACT: "
-            + doc["abstract"]
+            ("ABSTRACT: " if self.ABSTRACT else "ARTICLE: ")
+            + doc["abstract" if self.ABSTRACT else "article"].replace("\n", " ")
             + "\n\n"
-            + "Q: "
+            + "QUESTION: "
             + doc["question"]
             + "\n\n"
-            + "A:"
+            + "ANSWER:"
         )
 
     def doc_to_target(self, doc):
@@ -157,6 +165,7 @@ class QASPER(Task):
                     {
                         "title": doc["title"],
                         "abstract": doc["abstract"],
+                        "article": get_article(doc["full_text"]) if not self.ABSTRACT else "",
                         "question": question,
                         "answer": answer,
                         "answer_type": answer_type,
@@ -188,6 +197,7 @@ class QASPER(Task):
 
         # Handle completions
         if doc["answer_type"] == "free form answer":
+            print(f"\n----\nQuestion: {doc['question']}\nCorrect answer: {doc['answer']}\nGiven answer: {res}")
             res_dict["f1_abstractive"] = token_f1_score(res, doc["answer"])
 
         # TODO: Handle extraction
@@ -232,3 +242,14 @@ class QASPER(Task):
             "f1_yesno": True,
             "f1_abstractive": True,
         }
+
+class QASPERArticle(QASPER):
+    ABSTRACT = False
+
+class QASPERArticlePruned4K(QASPER):
+    ABSTRACT = False
+    DATASET_PATH = "emozilla/qasper-pruned-llama-gptneox-4k"
+
+class QASPERArticlePruned8K(QASPER):
+    ABSTRACT = False
+    DATASET_PATH = "emozilla/qasper-pruned-llama-gptneox-8k"
