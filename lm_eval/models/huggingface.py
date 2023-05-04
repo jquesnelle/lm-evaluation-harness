@@ -85,6 +85,7 @@ class HuggingFaceAutoLM(BaseLM):
         peft: str = None,
         load_in_8bit: Optional[bool] = False,
         trust_remote_code: Optional[bool] = False,
+        use_xpos: Optional[bool] = None,
     ):
         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
         Args:
@@ -165,6 +166,11 @@ class HuggingFaceAutoLM(BaseLM):
             trust_remote_code=trust_remote_code,
             revision=revision + ("/" + subfolder if subfolder is not None else ""),
         )
+        if max_length is not None and getattr(self._config, "max_position_embeddings", max_length) != max_length:
+            self._config.max_position_embeddings = max_length
+        if use_xpos is not None:
+            self._config.use_xpos = use_xpos
+        self._config.use_cache = True
 
         self._add_special_tokens = add_special_tokens
         self.tokenizer = self._create_auto_tokenizer(
@@ -186,6 +192,7 @@ class HuggingFaceAutoLM(BaseLM):
         model_kwargs["load_in_8bit"] = load_in_8bit
         self.model = self._create_auto_model(
             pretrained=pretrained,
+            config=self._config,
             trust_remote_code=trust_remote_code,
             revision=revision,
             subfolder=subfolder,
@@ -226,6 +233,7 @@ class HuggingFaceAutoLM(BaseLM):
         load_in_8bit: Optional[bool] = False,
         trust_remote_code: Optional[bool] = False,
         torch_dtype: Optional[Union[str, torch.dtype]] = None,
+        config: Optional[dict] = None,
     ) -> transformers.AutoModel:
         """Returns a pre-trained pytorch model from a pre-trained model configuration."""
         model = self.AUTO_MODEL_CLASS.from_pretrained(
@@ -237,6 +245,7 @@ class HuggingFaceAutoLM(BaseLM):
             load_in_8bit=load_in_8bit,
             trust_remote_code=trust_remote_code,
             torch_dtype=torch_dtype,
+            config=config,
         )
         return model
 
