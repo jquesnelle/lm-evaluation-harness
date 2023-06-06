@@ -65,7 +65,8 @@ _CITATION = """
 
 # SCROLLS is formualted as a sequence-to-sequence task.
 # To allow for evaluation of causal models, we'll
-# reformualte these with appropriate prompts
+# reformualte these with appropriate prompts, following the
+# formulations in ZeroSCROLLS
 
 
 def _download_metric():
@@ -328,6 +329,8 @@ class QuALITY(_SCROLLSMultipleChoiceTask):
 
     DATASET_NAME = "quality"
     _multiple_choice_pattern = re.compile(r" *\([A-D]\) *")
+    _prompt = "You are provided a story and a multiple-choice question with 4 possible answers (marked by A, B, C, D). Choose the best answer by writing its corresponding letter (either A, B, C, or D).\n\nStory:\n"
+    _choices = ["A", "B", "C", "D"]
 
     @staticmethod
     def _normalize_answer(text):
@@ -336,15 +339,23 @@ class QuALITY(_SCROLLSMultipleChoiceTask):
     def _process_doc(self, doc):
         doc = _process_doc_prepended_question(doc)
 
+        quesiton_split = doc["input"].find("\n\n", doc["input"].find("(D)"))
+        doc["question"] = doc["input"][0:quesiton_split]
+
         split = doc["text"].find("\n\n", doc["text"].find("(D)"))
         choices_text = doc["text"][:split]
 
         doc["text"] = doc["text"][split:].strip()
-        doc["choices"] = [QuALITY._normalize_answer(choice) for choice in re.split(
+        doc["choices"] = QuALITY._choices
+        stripped_choices = [QuALITY._normalize_answer(choice) for choice in re.split(
             QuALITY._multiple_choice_pattern, choices_text)[1:]]
-        doc["gold"] = doc["choices"].index(QuALITY._normalize_answer(doc["outputs"][0]))
+        doc["gold"] = stripped_choices.index(QuALITY._normalize_answer(doc["outputs"][0]))
 
         return [doc]
+
+    def doc_to_text(self, doc):
+        ret = f"{QuALITY._prompt}{doc['text']}\n\nQuestion and Possible Answers:\n{doc['question']}\n\nAnswer:\n"
+        return ret
 
 
 class NarrativeQA(_SCROLLSTask):
